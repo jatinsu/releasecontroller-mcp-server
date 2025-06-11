@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"regexp"
 	"strings"
 	"time"
 )
@@ -290,6 +291,28 @@ func extractProwJobInfo(jobURL string) (string, string, error) {
 	return jobName, jobID, nil
 }
 
+// extractTestNameFromURL extracts the first "e2e-*" segment from a prow job URL
+func extractTestNameFromURL(url string) (string, error) {
+	re := regexp.MustCompile(`e2e-[^/]+`)
+	match := re.FindString(url)
+
+	if match == "" {
+		return "", fmt.Errorf("no e2e test name found in URL: %s", url)
+	}
+	return strings.TrimPrefix(match, "/"), nil
+}
+
+// extractStepName parses a log line and extracts the step name
+func extractStepName(logLine string) (string, error) {
+	re := regexp.MustCompile(`Step (.*?) failed after`)
+	match := re.FindStringSubmatch(logLine)
+
+	if len(match) < 2 {
+		return "", fmt.Errorf("no step name found in line: %s", logLine)
+	}
+	return strings.TrimSpace(match[1]), nil
+}
+
 // ListReleaseControllers lists the available release controllers to use
 func (r *releaseControllerCli) ListReleaseControllers() string {
 	return strings.Join(r.releaseControllers, ",")
@@ -418,7 +441,34 @@ func (r *releaseControllerCli) GetJobInfoForRelease(prowurl string) (string, err
 		return "", fmt.Errorf("error extracting job info: %w", err)
 	}
 	joburl := fmt.Sprintf("https://storage.googleapis.com/test-platform-results/logs/%s/%s/build-log.txt", name, id)
-	return fetchURL(joburl)
+	data, err := fetchURL(joburl)
+	if err != nil {
+		return "", fmt.Errorf("error fetching job log: %w", err)
+	}
+	stepName, err := extractStepName(data)
+	if err != nil {
+		return data, nil
+	}
+	testName, err := extractTestNameFromURL(prowurl)
+	if err != nil {
+		return "", fmt.Errorf("error fetching test name: %w", err)
+	}
+	if !strings.HasPrefix(stepName, testName+"-") {
+		return "", fmt.Errorf("stepName does not start with testName prefix")
+	}
+	stepFolder := strings.TrimPrefix(stepName, testName+"-")
+	artifactURL := fmt.Sprintf("https://gcsweb-ci.apps.ci.l2s4.p1.openshiftapps.com/gcs/test-platform-results/logs/%s/%s/artifacts/%s/%s/build-log.txt", name, id, testName, stepFolder)
+	testLogs, err := fetchURL(artifactURL)
+	if err != nil {
+		return "", fmt.Errorf("error fetching test logs: %w", err)
+	}
+	const marker = "Failing tests:"
+	idx := strings.Index(testLogs, marker)
+	if idx == -1 {
+		return testLogs, nil // No marker found, return the full log
+	}
+	// Slice after the marker
+	return data[idx+len(marker):], nil
 }
 
 // List issues which are features from updated images commits - excludes OCPBUGS/CVEs
