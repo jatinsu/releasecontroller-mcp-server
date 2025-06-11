@@ -8,3 +8,6 @@ This MCP server provides tools to interact with the OKD and Openshift release co
 - Latest rejected release in a release stream
 - listing failed jobs in a release run
 - identifying failures for a given job
+- List CVE fixes in a given release
+- List BUGS fixed in a given release
+- List feature changes in a given release
