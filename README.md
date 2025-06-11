@@ -49,5 +49,5 @@ Sample query flow:
 - List the failed jobs in this release
 - For the gcp job, look at logs and list the failures
 
-Samples query flow if the stream, release and failing job is known:
+Samples query if the stream, release and failing job is known:
 - From the OKD release controller, fetch all failed jobs for release 4.20.0-0.okd-scos-2025-06-09-184607 in the 4.20.0-0.okd-scos stream, use the prow job url for the gcp job, list the failures and generate a succinct report not exceeding 1000 words
