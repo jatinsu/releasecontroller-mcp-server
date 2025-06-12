@@ -9,8 +9,12 @@ import (
 )
 
 const (
-	OKDReleaseController = "amd64.origin.releases.ci.openshift.org"
-	OCPReleaseController = "amd64.ocp.releases.ci.openshift.org"
+	OKDReleaseController     = "amd64.origin.releases.ci.openshift.org"
+	OCPReleaseController     = "amd64.ocp.releases.ci.openshift.org"
+	MultiReleaseController   = "multi.ocp.releases.ci.openshift.org"
+	ARM64ReleaseController   = "arm64.ocp.releases.ci.openshift.org"
+	PPC64LEReleaseController = "ppc64le.ocp.releases.ci.openshift.org"
+	S390XReleaseController   = "s390x.ocp.releases.ci.openshift.org"
 )
 
 type releaseControllerCli struct {
@@ -30,6 +34,26 @@ func (r *releaseControllerCli) GetOKDReleaseController() string {
 // GetOCPReleaseController returns the OCP release controller host
 func (r *releaseControllerCli) GetOCPReleaseController() string {
 	return OCPReleaseController
+}
+
+// GetMultiReleaseController returns the Multi release controller host
+func (r *releaseControllerCli) GetMultiReleaseController() string {
+	return MultiReleaseController
+}
+
+// GetARM64ReleaseController returns the ARM64 release controller host
+func (r *releaseControllerCli) GetARM64ReleaseController() string {
+	return ARM64ReleaseController
+}
+
+// GetPPC64LEReleaseController returns the PPC64LE release controller host
+func (r *releaseControllerCli) GetPPC64LEReleaseController() string {
+	return PPC64LEReleaseController
+}
+
+// GetS390XReleaseController returns the S390X release controller host
+func (r *releaseControllerCli) GetS390XReleaseController() string {
+	return S390XReleaseController
 }
 
 // ListReleaseStreams lists all the releases from all the streams in the release controller
@@ -184,20 +208,56 @@ func (r *releaseControllerCli) AnalyzeJobFailuresForRelease(prowurl string) (str
 	if err != nil {
 		return data, nil
 	}
-	testName, err := utils.ExtractTestNameFromURL(prowurl)
-	if err != nil {
-		return "", fmt.Errorf("error fetching test name: %w", err)
+
+	var artifactURL string
+	switch stepName {
+	case "release-analysis-aggregator-openshift-release-analysis-aggregator":
+		artifactURL = fmt.Sprintf("https://gcsweb-ci.apps.ci.l2s4.p1.openshiftapps.com/gcs/test-platform-results/logs/%s/%s/artifacts/release-analysis-aggregator/openshift-release-analysis-aggregator/build-log.txt", name, id)
+	case "release-payload-install-analysis-openshift-release-analysis-test-case-analysis":
+		artifactURL = fmt.Sprintf("https://gcsweb-ci.apps.ci.l2s4.p1.openshiftapps.com/gcs/test-platform-results/logs/%s/%s/artifacts/release-payload-install-analysis/openshift-release-analysis-test-case-analysis/build-log.txt", name, id)
+		installAnalysisLogs, err := utils.FetchURL(artifactURL)
+		if err != nil {
+			return "", fmt.Errorf("error fetching test logs: %w", err)
+		}
+		artifactURL = strings.TrimSuffix(artifactURL, "build-log.txt") + "artifacts"
+		installAnalysisJobFailues, err := utils.FetchAggregateJobFailures(artifactURL, installAnalysisLogs)
+		if err != nil {
+			return "", fmt.Errorf("error fetching aggregate job failures: %w", err)
+		}
+		return installAnalysisJobFailues, nil
+	case "release-payload-overall-analysis-all-openshift-release-analysis-test-case-analysis":
+		artifactURL = fmt.Sprintf("https://gcsweb-ci.apps.ci.l2s4.p1.openshiftapps.com/gcs/test-platform-results/logs/%s/%s/artifacts/release-payload-overall-analysis-all/openshift-release-analysis-test-case-analysis/build-log.txt", name, id)
+		overallAnalysisLogs, err := utils.FetchURL(artifactURL)
+		if err != nil {
+			return "", fmt.Errorf("error fetching test logs: %w", err)
+		}
+		artifactURL = strings.TrimSuffix(artifactURL, "build-log.txt") + "artifacts"
+		overallAnalysisJobFailues, err := utils.FetchAggregateJobFailures(artifactURL, overallAnalysisLogs)
+		if err != nil {
+			return "", fmt.Errorf("error fetching aggregate job failures: %w", err)
+		}
+		return overallAnalysisJobFailues, nil
+	default:
+		testName, err := utils.ExtractTestNameFromURL(prowurl)
+		if err != nil {
+			return "", fmt.Errorf("error fetching test name: %w", err)
+		}
+
+		if !strings.HasPrefix(stepName, testName+"-") {
+			return "", fmt.Errorf("stepName does not start with testName prefix")
+		}
+		stepFolder := strings.TrimPrefix(stepName, testName+"-")
+		artifactURL = fmt.Sprintf("https://gcsweb-ci.apps.ci.l2s4.p1.openshiftapps.com/gcs/test-platform-results/logs/%s/%s/artifacts/%s/%s/build-log.txt", name, id, testName, stepFolder)
 	}
-	if !strings.HasPrefix(stepName, testName+"-") {
-		return "", fmt.Errorf("stepName does not start with testName prefix")
-	}
-	stepFolder := strings.TrimPrefix(stepName, testName+"-")
-	artifactURL := fmt.Sprintf("https://gcsweb-ci.apps.ci.l2s4.p1.openshiftapps.com/gcs/test-platform-results/logs/%s/%s/artifacts/%s/%s/build-log.txt", name, id, testName, stepFolder)
+
 	testLogs, err := utils.FetchURL(artifactURL)
 	if err != nil {
 		return "", fmt.Errorf("error fetching test logs: %w", err)
 	}
-	testLogs = utils.CompactTestLogs(testLogs)
+	if strings.Contains(stepName, "e2e") {
+		// If the step is an e2e test, we want to compact the logs
+		testLogs = utils.CompactTestLogs(testLogs)
+	}
 	return testLogs, nil
 }
 
@@ -293,6 +353,6 @@ func (r *releaseControllerCli) ListCVEsFromUpdatedImagesCommits(releasecontrolle
 
 func newReleaseControllerCli() *releaseControllerCli {
 	return &releaseControllerCli{
-		releaseControllers: []string{OKDReleaseController, OCPReleaseController},
+		releaseControllers: []string{OKDReleaseController, OCPReleaseController, MultiReleaseController, ARM64ReleaseController, PPC64LEReleaseController, S390XReleaseController},
 	}
 }

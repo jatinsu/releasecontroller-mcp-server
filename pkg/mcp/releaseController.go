@@ -22,6 +22,26 @@ func (s *Server) initReleaseController() []server.ServerTool {
 		), func(_ context.Context, _ mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 			return NewTextResult(s.releaseController.GetOCPReleaseController(), nil), nil
 		}},
+		{mcp.NewTool("get_multi_release_controller",
+			mcp.WithDescription("Gets the multi-arch release controller URL."),
+		), func(_ context.Context, _ mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+			return NewTextResult(s.releaseController.GetMultiReleaseController(), nil), nil
+		}},
+		{mcp.NewTool("get_arm64_release_controller",
+			mcp.WithDescription("Gets the ARM64 release controller URL."),
+		), func(_ context.Context, _ mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+			return NewTextResult(s.releaseController.GetARM64ReleaseController(), nil), nil
+		}},
+		{mcp.NewTool("get_ppc64le_release_controller",
+			mcp.WithDescription("Gets the PPC64LE release controller URL."),
+		), func(_ context.Context, _ mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+			return NewTextResult(s.releaseController.GetPPC64LEReleaseController(), nil), nil
+		}},
+		{mcp.NewTool("get_s390x_release_controller",
+			mcp.WithDescription("Gets the S390X release controller URL."),
+		), func(_ context.Context, _ mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+			return NewTextResult(s.releaseController.GetS390XReleaseController(), nil), nil
+		}},
 		{mcp.NewTool("list_release_streams",
 			mcp.WithDescription("Lists all the release streams in the release controller."),
 			mcp.WithString("releasecontroller", mcp.Description("The release controller host to query"), mcp.Required()),

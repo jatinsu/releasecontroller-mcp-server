@@ -8,6 +8,14 @@ type ReleaseController interface {
 	GetOKDReleaseController() string
 	// GetOCPReleaseController returns the OpenShift release controller URL
 	GetOCPReleaseController() string
+	//GetMultiReleaseController returns the multi-arch release controller URL
+	GetMultiReleaseController() string
+	//GetARM64ReleaseController returns the ARM64 release controller URL
+	GetARM64ReleaseController() string
+	// GetPPC64LEReleaseController returns the PPC64LE release controller URL
+	GetPPC64LEReleaseController() string
+	// GetS390XReleaseController returns the S390X release controller URL
+	GetS390XReleaseController() string
 	// ListReleaseStreams lists all the release streams in the release controller
 	ListReleaseStreams(releasecontroller string) (string, error)
 	// LatestAcceptedRelease gets the latest accepted release for a given stream

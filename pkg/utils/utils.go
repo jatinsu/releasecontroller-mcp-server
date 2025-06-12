@@ -160,7 +160,7 @@ func ExtractProwJobInfo(jobURL string) (string, string, error) {
 
 // ExtractTestNameFromURL extracts the first "e2e-*" segment from a prow job URL
 func ExtractTestNameFromURL(url string) (string, error) {
-	re := regexp.MustCompile(`e2e-[^/]+`)
+	re := regexp.MustCompile(`(?:ocp-)?e2e-[^/]+`)
 	match := re.FindString(url)
 	if match == "" {
 		return "", fmt.Errorf("no e2e test name found in URL: %s", url)
@@ -200,6 +200,11 @@ func CompactTestLogs(input string) string {
 			}
 		}
 	}
+
+	// Couldn't compact any logs, return the original input
+	if len(b.String()) <= 0 {
+		return input
+	}
 	return b.String()
 }
 
@@ -220,4 +225,62 @@ func ExtractFailingTestsBlock(input string) string {
 		}
 	}
 	return b.String()
+}
+
+func ExtractFailedJobsFromAggregate(logData string) map[string]bool {
+	jobPIDMap := map[string]string{}
+	failedPIDs := map[string]bool{}
+	result := map[string]bool{}
+
+	// Match lines like: "********** Starting testcase analysis for: <job>"
+	jobRegex := regexp.MustCompile(`\*+ Starting testcase analysis for: (.+)`)
+	// Match lines like: "[Tue Jun 10 19:10:22 UTC 2025] <pid> finished with ret=1"
+	failRegex := regexp.MustCompile(`\] (\d+) finished with ret=1`)
+
+	lines := strings.Split(logData, "\n")
+	var currentJob string
+	for _, line := range lines {
+		if matches := jobRegex.FindStringSubmatch(line); len(matches) == 2 {
+			currentJob = matches[1]
+		}
+		if strings.HasPrefix(line, "PID is ") && currentJob != "" {
+			pid := strings.TrimPrefix(line, "PID is ")
+			jobPIDMap[pid] = currentJob
+		}
+		if matches := failRegex.FindStringSubmatch(line); len(matches) == 2 {
+			failedPIDs[matches[1]] = true
+		}
+	}
+
+	for pid, job := range jobPIDMap {
+		result[strings.TrimSpace(job)] = failedPIDs[pid]
+	}
+
+	return result
+}
+
+func FetchAggregateJobFailures(baseUrl, logData string) (string, error) {
+	failJobMap := ExtractFailedJobsFromAggregate(logData)
+	if len(failJobMap) == 0 {
+		return "", fmt.Errorf("no failed jobs found in the provided log data")
+	}
+	var builder strings.Builder
+	for job, failed := range failJobMap {
+		if !failed {
+			continue
+		}
+
+		data, err := FetchURL(baseUrl + "/" + job + "/" + job + ".log")
+		if err != nil {
+			return "", fmt.Errorf("error fetching URL %q: %w", baseUrl, err)
+		}
+		// Find the index of the "summary:" line
+		idx := strings.Index(data, "summary:")
+		if idx < 0 {
+			return "", fmt.Errorf("no summary: found in log for job %q", job)
+		}
+		builder.WriteString(data[idx:])
+		builder.WriteString("\n---\n\n")
+	}
+	return builder.String(), nil
 }
