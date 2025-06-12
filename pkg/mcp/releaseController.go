@@ -48,10 +48,18 @@ func (s *Server) initReleaseController() []server.ServerTool {
 			mcp.WithString("stream", mcp.Description("The release stream name"), mcp.Required()),
 			mcp.WithString("tag", mcp.Description("The release tag"), mcp.Required()),
 		), s.listComponentsInRelease},
-		{mcp.NewTool("get_job_info_for_release",
+		{mcp.NewTool("list_test_failures_for_release",
+			mcp.WithDescription("Gets the failing tests for the particular job. List the failing tests in the release if there are any."),
+			mcp.WithString("prowurl", mcp.Description("The prow job URL"), mcp.Required()),
+		), func(_ context.Context, ctr mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+			prowurl := ctr.Params.Arguments["prowurl"].(string)
+			result, err := s.releaseController.ListTestFailuresForRelease(prowurl)
+			return NewTextResult(result, err), nil
+		}},
+		{mcp.NewTool("analyze_job_failures_for_release",
 			mcp.WithDescription("Gets the build log file for the particular job. Analyze the job information and find out the reason for failure. Look for error strings in the log file. Print a short summary with relevant errors and keep it under 500 words"),
 			mcp.WithString("prowurl", mcp.Description("The prow job URL"), mcp.Required()),
-		), s.getJobInfoForRelease},
+		), s.analyzeJobFailuresForRelease},
 		{mcp.NewTool("list_features_from_updated_images_commits",
 			mcp.WithDescription("Lists issues which are features from updated images commits - excludes OCPBUGS/CVEs"),
 			mcp.WithString("releasecontroller", mcp.Description("The release controller host to query"), mcp.Required()),
@@ -131,8 +139,8 @@ func (s *Server) listComponentsInRelease(_ context.Context, ctr mcp.CallToolRequ
 	return NewTextResult(result, err), nil
 }
 
-func (s *Server) getJobInfoForRelease(_ context.Context, ctr mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+func (s *Server) analyzeJobFailuresForRelease(_ context.Context, ctr mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	prowurl := ctr.Params.Arguments["prowurl"].(string)
-	result, err := s.releaseController.GetJobInfoForRelease(prowurl)
+	result, err := s.releaseController.AnalyzeJobFailuresForRelease(prowurl)
 	return NewTextResult(result, err), nil
 }
