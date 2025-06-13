@@ -178,34 +178,35 @@ func ExtractStepName(logLine string) (string, error) {
 	return strings.TrimSpace(match[1]), nil
 }
 
-func CompactTestLogs(input string) string {
+func CompactTestLogs(input string, threshold float64) string {
 	lines := strings.Split(input, "\n")
 	var b strings.Builder
 
-	inBlock := false
-
-	for _, line := range lines {
-		if !inBlock && strings.HasPrefix(line, "started:") {
-			inBlock = true
-		}
-
-		if inBlock {
-			if strings.HasPrefix(line, "started:") || strings.HasPrefix(line, "passed: ") || strings.HasPrefix(line, "skipped: ") {
-				continue
+	if threshold > 0.6 {
+		inBlock := false
+		for _, line := range lines {
+			if !inBlock && strings.HasPrefix(line, "started:") {
+				inBlock = true
 			}
-			b.WriteString(line + "\n")
 
-			if strings.Contains(line, "Shutting down the monitor") {
-				break
+			if inBlock {
+				if strings.HasPrefix(line, "started:") || strings.HasPrefix(line, "passed: ") || strings.HasPrefix(line, "skipped: ") {
+					continue
+				}
+				b.WriteString(line + "\n")
+
+				//if strings.Contains(line, "Shutting down the monitor") {
+				//	break
+				//}
 			}
 		}
 	}
 
 	// Couldn't compact any logs, return the original input
 	if len(b.String()) <= 0 {
-		return input
+		return DeduplicateLogsWithWindow(input, threshold, 5)
 	}
-	return b.String()
+	return DeduplicateLogsWithWindow(b.String(), threshold, 5)
 }
 
 func ExtractFailingTestsBlock(input string) string {
@@ -223,6 +224,10 @@ func ExtractFailingTestsBlock(input string) string {
 			}
 			b.WriteString(line + "\n")
 		}
+	}
+	// If no failing tests block was found, return the original input
+	if len(b.String()) <= 0 {
+		return DeduplicateLogsWithWindow(input, 1.0, 5)
 	}
 	return b.String()
 }

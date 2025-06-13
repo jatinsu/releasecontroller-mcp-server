@@ -194,7 +194,7 @@ func (r *releaseControllerCli) ListTestFailuresForRelease(prowurl string) (strin
 }
 
 // AnalyzeJobFailuresForRelease gets the build log file for the particular job
-func (r *releaseControllerCli) AnalyzeJobFailuresForRelease(prowurl string) (string, error) {
+func (r *releaseControllerCli) AnalyzeJobFailuresForRelease(prowurl string, LogCompactionThreshold string) (string, error) {
 	name, id, err := utils.ExtractProwJobInfo(prowurl)
 	if err != nil {
 		return "", fmt.Errorf("error extracting job info: %w", err)
@@ -255,8 +255,19 @@ func (r *releaseControllerCli) AnalyzeJobFailuresForRelease(prowurl string) (str
 		return "", fmt.Errorf("error fetching test logs: %w", err)
 	}
 	if strings.Contains(stepName, "e2e") {
+		var threshold float64
+		switch LogCompactionThreshold {
+		case "aggressive":
+			threshold = 0.5 // Aggressive compaction threshold
+		case "moderate":
+			threshold = 0.8 // Moderate compaction threshold
+		case "conservative":
+			threshold = 0.9 // Conservative compaction threshold
+		default:
+			threshold = 1.0 // Default threshold (only removes exact duplicates)
+		}
 		// If the step is an e2e test, we want to compact the logs
-		testLogs = utils.CompactTestLogs(testLogs)
+		testLogs = utils.CompactTestLogs(testLogs, threshold)
 	}
 	return testLogs, nil
 }

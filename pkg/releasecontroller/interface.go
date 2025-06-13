@@ -29,7 +29,7 @@ type ReleaseController interface {
 	// ListTestFailuresForRelease gets the failing tests for the particular job
 	ListTestFailuresForRelease(prowurl string) (string, error)
 	// AnalyzeJobFailuresForRelease gets the build log file for the particular job
-	AnalyzeJobFailuresForRelease(url string) (string, error)
+	AnalyzeJobFailuresForRelease(url string, LogCompactionThreshold string) (string, error)
 	// List issues which are features from updated images commits - excludes OCPBUGS/CVEs
 	ListFeaturesFromUpdatedImagesCommits(releasecontroller, stream, tag string) (string, error)
 	// List issues which are bugs from updated images commits

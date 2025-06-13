@@ -13,32 +13,32 @@ func (s *Server) initReleaseController() []server.ServerTool {
 			mcp.WithDescription("Lists the available release controllers to use. Only two are available - OKD and OpenShift."),
 		), s.listReleaseControllers},
 		{mcp.NewTool("get_okd_release_controller",
-			mcp.WithDescription("Gets the OKD release controller URL."),
+			mcp.WithDescription("Gets the OKD/origin release controller URL."),
 		), func(_ context.Context, _ mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 			return NewTextResult(s.releaseController.GetOKDReleaseController(), nil), nil
 		}},
 		{mcp.NewTool("get_ocp_release_controller",
-			mcp.WithDescription("Gets the OpenShift release controller URL."),
+			mcp.WithDescription("Gets the OpenShift/OCP/ocp release controller URL."),
 		), func(_ context.Context, _ mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 			return NewTextResult(s.releaseController.GetOCPReleaseController(), nil), nil
 		}},
 		{mcp.NewTool("get_multi_release_controller",
-			mcp.WithDescription("Gets the multi-arch release controller URL."),
+			mcp.WithDescription("Gets the multi-arch/multi release controller URL."),
 		), func(_ context.Context, _ mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 			return NewTextResult(s.releaseController.GetMultiReleaseController(), nil), nil
 		}},
 		{mcp.NewTool("get_arm64_release_controller",
-			mcp.WithDescription("Gets the ARM64 release controller URL."),
+			mcp.WithDescription("Gets the ARM64/arm64 release controller URL."),
 		), func(_ context.Context, _ mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 			return NewTextResult(s.releaseController.GetARM64ReleaseController(), nil), nil
 		}},
 		{mcp.NewTool("get_ppc64le_release_controller",
-			mcp.WithDescription("Gets the PPC64LE release controller URL."),
+			mcp.WithDescription("Gets the PPC64LE/ppc64le release controller URL."),
 		), func(_ context.Context, _ mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 			return NewTextResult(s.releaseController.GetPPC64LEReleaseController(), nil), nil
 		}},
 		{mcp.NewTool("get_s390x_release_controller",
-			mcp.WithDescription("Gets the S390X release controller URL."),
+			mcp.WithDescription("Gets the S390X/s390x release controller URL."),
 		), func(_ context.Context, _ mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 			return NewTextResult(s.releaseController.GetS390XReleaseController(), nil), nil
 		}},
@@ -77,8 +77,9 @@ func (s *Server) initReleaseController() []server.ServerTool {
 			return NewTextResult(result, err), nil
 		}},
 		{mcp.NewTool("analyze_job_failures_for_release",
-			mcp.WithDescription("Gets the build log file for the particular job. Analyze the job information and find out the reason for failure. Look for error strings in the log file. Print a short summary with relevant errors and keep it under 500 words"),
+			mcp.WithDescription("Gets the build log file for the particular job. Analyze the job information and look for failures. Print a short summary with relevant errors and keep it under 500 words. If the file is a test log file, look for specific failing tests while ignoring Flaky tests and print the exact test name and cause of failure. If the log is too big, ask for compaction threshold string which can be aggresive, moderate or conservative."),
 			mcp.WithString("prowurl", mcp.Description("The prow job URL"), mcp.Required()),
+			mcp.WithString("LogCompactionThreshold", mcp.Description("The log compaction threshold string")),
 		), s.analyzeJobFailuresForRelease},
 		{mcp.NewTool("list_features_from_updated_images_commits",
 			mcp.WithDescription("Lists issues which are features from updated images commits - excludes OCPBUGS/CVEs"),
@@ -160,7 +161,13 @@ func (s *Server) listComponentsInRelease(_ context.Context, ctr mcp.CallToolRequ
 }
 
 func (s *Server) analyzeJobFailuresForRelease(_ context.Context, ctr mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	var logCompactionThreshold string
 	prowurl := ctr.Params.Arguments["prowurl"].(string)
-	result, err := s.releaseController.AnalyzeJobFailuresForRelease(prowurl)
+	if strVal, ok := ctr.Params.Arguments["LogCompactionThreshold"].(string); !ok {
+		logCompactionThreshold = "exact" // Default value if not provided
+	} else {
+		logCompactionThreshold = strVal
+	}
+	result, err := s.releaseController.AnalyzeJobFailuresForRelease(prowurl, logCompactionThreshold)
 	return NewTextResult(result, err), nil
 }
