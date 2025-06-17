@@ -1,6 +1,7 @@
 package mcp
 
 import (
+	"github.com/Prashanth684/releasecontroller-mcp-server/pkg/cluster"
 	"github.com/Prashanth684/releasecontroller-mcp-server/pkg/releasecontroller"
 	"github.com/Prashanth684/releasecontroller-mcp-server/pkg/version"
 	"github.com/mark3labs/mcp-go/mcp"
@@ -11,6 +12,7 @@ import (
 type Server struct {
 	server            *server.MCPServer
 	releaseController releasecontroller.ReleaseController
+	cluster           cluster.Cluster
 }
 
 func NewSever() (*Server, error) {
@@ -25,8 +27,10 @@ func NewSever() (*Server, error) {
 		),
 	}
 	s.releaseController = releasecontroller.NewReleaseController()
+	s.cluster = cluster.NewCluster()
 	s.server.AddTools(slices.Concat(
 		s.initReleaseController(),
+		s.initCluster(),
 	)...)
 	return s, nil
 }

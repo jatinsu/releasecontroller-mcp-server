@@ -289,3 +289,24 @@ func FetchAggregateJobFailures(baseUrl, logData string) (string, error) {
 	}
 	return builder.String(), nil
 }
+
+func GetGatherExtraFolderPath(prowurl string) (string, error) {
+	name, id, err := ExtractProwJobInfo(prowurl)
+	if err != nil {
+		return "", fmt.Errorf("error extracting job info: %w", err)
+	}
+	testName, err := ExtractTestNameFromURL(prowurl)
+	if err != nil {
+		return "", fmt.Errorf("error fetching test name: %w", err)
+	}
+	gatherExtraURL := fmt.Sprintf("https://gcsweb-ci.apps.ci.l2s4.p1.openshiftapps.com/gcs/test-platform-results/logs/%s/%s/artifacts/%s/gather-extra/artifacts/", name, id, testName)
+	return gatherExtraURL, nil
+}
+
+func IndentMultiline(s, indent string) string {
+	lines := strings.Split(s, "\n")
+	for i, line := range lines {
+		lines[i] = indent + line
+	}
+	return strings.Join(lines, "\n")
+}
