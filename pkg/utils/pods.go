@@ -31,6 +31,50 @@ func AllPodsSummary(pods []corev1.Pod) string {
 	return b.String()
 }
 
+func GetPodsByNamespace(pods []corev1.Pod, namespace string) []corev1.Pod {
+	var filteredPods []corev1.Pod
+	for _, pod := range pods {
+		if pod.Namespace == namespace {
+			filteredPods = append(filteredPods, pod)
+		}
+	}
+	return filteredPods
+}
+
+// GetContainerNamesInPod returns a string of container names in the specified pod.
+func GetContainerNamesInPod(pods []corev1.Pod, podName string) string {
+	var names []string
+
+	//Get pod from the list of pods
+	var pod *corev1.Pod
+	for _, p := range pods {
+		if p.Name == podName {
+			pod = &p
+			break
+		}
+	}
+	if pod == nil {
+		return fmt.Sprintf("Pod %s not found.", podName)
+	}
+
+	for _, c := range pod.Spec.InitContainers {
+		names = append(names, c.Name)
+	}
+
+	for _, c := range pod.Spec.Containers {
+		names = append(names, c.Name)
+	}
+
+	for _, c := range pod.Spec.EphemeralContainers {
+		names = append(names, c.Name)
+	}
+
+	if len(names) == 0 {
+		return "No containers found in pod."
+	}
+	return strings.Join(names, " ")
+}
+
 func RunningPodsSummary(pods []corev1.Pod) string {
 	var b strings.Builder
 	for _, pod := range pods {

@@ -45,12 +45,12 @@ func (c *clusterCli) GetPodsInNamespace(prowurl string, namespace string) (strin
 	//Fetch the url of the extra folder
 	artifactURL, err := utils.GetGatherExtraFolderPath(prowurl)
 	if err != nil {
-		return "", fmt.Errorf("error getting gather extra folder path: %w", err)
+		return "No pods found", fmt.Errorf("error getting gather extra folder path: %w", err)
 	}
 	// Download the pods.json file from the artifact URL
 	pods, err := utils.LoadPodsFromFile(artifactURL + "pods.json")
 	if err != nil {
-		return "", fmt.Errorf("error loading pods: %w", err)
+		return "No pods found", fmt.Errorf("error loading pods: %w", err)
 	}
 	return utils.FilterPodsByNamespaceAsString(pods, namespace), nil
 }
@@ -59,14 +59,50 @@ func (c *clusterCli) GetPodsInNode(prowurl string, nodeName string) (string, err
 	//Fetch the url of the extra folder
 	artifactURL, err := utils.GetGatherExtraFolderPath(prowurl)
 	if err != nil {
-		return "", fmt.Errorf("error getting gather extra folder path: %w", err)
+		return "No pods found", fmt.Errorf("error getting gather extra folder path: %w", err)
 	}
 	// Download the pods.json file from the artifact URL
 	pods, err := utils.LoadPodsFromFile(artifactURL + "pods.json")
 	if err != nil {
-		return "", fmt.Errorf("error loading pods: %w", err)
+		return "No pods found", fmt.Errorf("error loading pods: %w", err)
 	}
 	return utils.FilterPodsByNodeAsString(pods, nodeName), nil
+}
+
+func (c *clusterCli) GetContainersInPod(prowurl string, podName string, namespace string) (string, error) {
+	//Fetch the url of the extra folder
+	artifactURL, err := utils.GetGatherExtraFolderPath(prowurl)
+	if err != nil {
+		return "No containers found", fmt.Errorf("error getting gather extra folder path: %w", err)
+	}
+	// Download the pods.json file from the artifact URL
+	pods, err := utils.LoadPodsFromFile(artifactURL + "pods.json")
+	if err != nil {
+		return "No containers found", fmt.Errorf("error loading pods: %w", err)
+	}
+	// Filter pods by namespace
+	nspods := utils.GetPodsByNamespace(pods, namespace)
+	if len(nspods) == 0 {
+		return "No pods found", fmt.Errorf("no pods found in namespace %s", namespace)
+	}
+	// Get container names in the specified pod
+	return utils.GetContainerNamesInPod(pods, podName), nil
+}
+
+func (c *clusterCli) GetContainerLogs(prowurl string, podName string, namespace string, containerName string) (string, error) {
+	//Fetch the url of the extra folder
+	artifactURL, err := utils.GetGatherExtraFolderPath(prowurl)
+	if err != nil {
+		return "No container logs found", fmt.Errorf("error getting gather extra folder path: %w", err)
+	}
+	// Construct the path to the container log file
+	logFilePath := utils.GetContainerLogFilePath(artifactURL, podName, namespace, containerName)
+	// Download the container log file from the artifact URL
+	logData, err := utils.FetchURL(logFilePath)
+	if err != nil {
+		return "No container logs found", fmt.Errorf("error fetching container log: %w", err)
+	}
+	return logData, nil
 }
 
 // Extract status summary (Available, Progressing, Degraded) for each operator
@@ -74,12 +110,12 @@ func (c *clusterCli) GetClusterOperatorStatusSummary(prowurl string) (string, er
 	//Fetch the url of the extra folder
 	artifactURL, err := utils.GetGatherExtraFolderPath(prowurl)
 	if err != nil {
-		return "", fmt.Errorf("error getting gather extra folder path: %w", err)
+		return "No clusteroperatrs found", fmt.Errorf("error getting gather extra folder path: %w", err)
 	}
 	// Download the clusteroperators.json file from the artifact URL
 	operators, err := utils.LoadClusterOperatorsFromFile(artifactURL + "clusteroperators.json")
 	if err != nil {
-		return "", fmt.Errorf("error loading cluster operators: %w", err)
+		return "No clusteroperatrs found", fmt.Errorf("error loading cluster operators: %w", err)
 	}
 	var b strings.Builder
 	for _, op := range operators {
@@ -107,12 +143,12 @@ func (c *clusterCli) GetClusterVersionSummary(prowurl string) (string, error) {
 	// Fetch the url of the extra folder
 	artifactURL, err := utils.GetGatherExtraFolderPath(prowurl)
 	if err != nil {
-		return "", fmt.Errorf("error getting gather extra folder path: %w", err)
+		return "No clusterversion object found", fmt.Errorf("error getting gather extra folder path: %w", err)
 	}
 	// Download the clusterversion.json file from the artifact URL
 	clusterVersion, err := utils.LoadClusterVersionFromFile(artifactURL + "clusterversion.json")
 	if err != nil {
-		return "", fmt.Errorf("error loading cluster version: %w", err)
+		return "No clusterversion object found", fmt.Errorf("error loading cluster version: %w", err)
 	}
 
 	var b strings.Builder

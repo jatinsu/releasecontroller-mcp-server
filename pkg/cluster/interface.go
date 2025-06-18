@@ -8,18 +8,16 @@ type Cluster interface {
 	GetPodsInNamespace(prowurl string, namespace string) (string, error)
 	// GetPodsInNode returns the pods in a specific node
 	GetPodsInNode(prowurl string, nodeName string) (string, error)
+	// GetContainersInPod returns the containers in a specific pod
+	GetContainersInPod(prowurl string, podName string, namespace string) (string, error)
+	// GetContainerLogs returns the logs of a specific container in a pod
+	GetContainerLogs(prowurl string, podName string, namespace string, containerName string) (string, error)
 	// GetClusterOperatorStatusSummary returns the status summary of cluster operators
 	GetClusterOperatorStatusSummary(prowurl string) (string, error)
 	// GetClusterVersionSummary returns the cluster version summary
 	GetClusterVersionSummary(prowurl string) (string, error)
-	// GetClusterNodesSummary returns the summary of cluster nodes
-	//GetClusterNodesSummary(prowurl string) (string, error)
 	// GetClusterNodes returns the list of cluster nodes
 	//GetClusterNodes(prowurl string) ([]corev1.Node, error)
-	// GetClusterPods returns the list of cluster pods
-	//GetClusterPods(prowurl string) ([]corev1.Pod, error)
-	// GetClusterPodsSummary returns the summary of cluster pods
-	//GetClusterPodsSummary(prowurl string) (string, error)
 }
 
 func NewCluster() Cluster {

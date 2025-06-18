@@ -303,6 +303,11 @@ func GetGatherExtraFolderPath(prowurl string) (string, error) {
 	return gatherExtraURL, nil
 }
 
+func GetContainerLogFilePath(gatherExtraPath, podName, namespace, containerName string) string {
+	// Construct the path to the container log file
+	return fmt.Sprintf("%s/pods/%s_%s_%s.log", gatherExtraPath, namespace, podName, containerName)
+}
+
 func IndentMultiline(s, indent string) string {
 	lines := strings.Split(s, "\n")
 	for i, line := range lines {
