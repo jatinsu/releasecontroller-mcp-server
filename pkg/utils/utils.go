@@ -160,12 +160,20 @@ func ExtractProwJobInfo(jobURL string) (string, string, error) {
 
 // ExtractTestNameFromURL extracts the first "e2e-*" segment from a prow job URL
 func ExtractTestNameFromURL(url string) (string, error) {
-	re := regexp.MustCompile(`(?:ocp-)?e2e-[^/]+`)
-	match := re.FindString(url)
-	if match == "" {
-		return "", fmt.Errorf("no e2e test name found in URL: %s", url)
+	re := regexp.MustCompile(`(?:^|-)((?:ocp-)?e2e-[^/]+)`)
+	match := re.FindStringSubmatch(url)
+	if len(match) <= 1 {
+		// catch jobs like periodic-ci-openshift-release-master-nightly-4.20-console-aws
+		re := regexp.MustCompile(`\d+\.\d+-([^/]+)`)
+		matches := re.FindStringSubmatch(url)
+		if len(matches) > 1 {
+			extractedName := matches[1]
+			return extractedName, nil
+		} else {
+			return "", fmt.Errorf("no e2e test name found in URL: %s", url)
+		}
 	}
-	return strings.TrimPrefix(match, "/"), nil
+	return match[1], nil
 }
 
 // ExtractStepName parses a log line and extracts the step name
@@ -209,7 +217,7 @@ func CompactTestLogs(input string, threshold float64) string {
 	return DeduplicateLogsWithWindow(b.String(), threshold, 5)
 }
 
-func ExtractFailingTestsBlock(input string) string {
+func ExtractFailingTestsBlock(input string) (string, error) {
 	lines := strings.Split(input, "\n")
 	var b strings.Builder
 	inBlock := false
@@ -225,11 +233,71 @@ func ExtractFailingTestsBlock(input string) string {
 			b.WriteString(line + "\n")
 		}
 	}
-	// If no failing tests block was found, return the original input
+	// If no failing tests block was found, return error
 	if len(b.String()) <= 0 {
-		return DeduplicateLogsWithWindow(input, 1.0, 5)
+		return "No failing tests found.", fmt.Errorf("no failing tests block found in the input")
 	}
-	return b.String()
+	return b.String(), nil
+}
+
+func ExtractFlakyTestsBlock(input string) (string, error) {
+	lines := strings.Split(input, "\n")
+	var b strings.Builder
+	// Regex to match flaked line and extract content inside quotes
+	flakedRegex := regexp.MustCompile(`flaked:.*?"([^"]+)"`)
+	inBlock := false
+	skippedEmptyAfterFlaky := false
+	for _, line := range lines {
+		// Handle flaked lines with quoted test names
+		if matches := flakedRegex.FindStringSubmatch(line); len(matches) == 2 {
+			b.WriteString(line + "\n")
+			continue
+		}
+
+		if strings.Contains(line, "Flaky tests:") {
+			inBlock = true
+		}
+		if inBlock {
+			// Skip exactly one empty line after "Flaky tests:"
+			if !skippedEmptyAfterFlaky && strings.TrimSpace(line) == "" {
+				skippedEmptyAfterFlaky = true
+				continue
+			}
+			// Stop on empty line or end marker
+			if strings.TrimSpace(line) == "" {
+				break
+			}
+			b.WriteString(line + "\n")
+		}
+	}
+	// If no flaky tests block was found, return error
+	if len(b.String()) <= 0 {
+		return "No flaky tests found.", fmt.Errorf("no flaky tests block found in the input")
+	}
+	return b.String(), nil
+}
+
+func ExtractMonitorTestFailures(input string) (string, error) {
+	lines := strings.Split(input, "\n")
+	var b strings.Builder
+	inBlock := false
+	for _, line := range lines {
+		if strings.Contains(line, "Failing tests:") {
+			break
+		}
+
+		if strings.Contains(line, "Suite run returned error: failed due to a MonitorTest failure") {
+			inBlock = true
+		}
+		if inBlock {
+			b.WriteString(line + "\n")
+		}
+	}
+	// If no monitor test failures block was found, return error
+	if len(b.String()) <= 0 {
+		return "No monitor test failures found.", fmt.Errorf("no monitor test failures block found in the input")
+	}
+	return b.String(), nil
 }
 
 func ExtractFailedJobsFromAggregate(logData string) map[string]bool {

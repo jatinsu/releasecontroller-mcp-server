@@ -16,8 +16,20 @@ type Cluster interface {
 	GetClusterOperatorStatusSummary(prowurl string) (string, error)
 	// GetClusterVersionSummary returns the cluster version summary
 	GetClusterVersionSummary(prowurl string) (string, error)
-	// GetClusterNodes returns the list of cluster nodes
-	//GetClusterNodes(prowurl string) ([]corev1.Node, error)
+	// GetNodesInfo returns the information of all nodes in the cluster
+	GetNodesInfo(prowurl string) (string, error)
+	// GetNodeInfoByName returns the information of a specific node by name
+	GetNodeInfoByName(prowurl string, nodeName string) (string, error)
+	// GetNodeLabelsByName returns the labels of a specific node by name
+	GetNodeLabelsByName(prowurl string, nodeName string) (string, error)
+	// GetNodeAnnotationsByName returns the annotations of a specific node by name
+	GetNodeAnnotationsByName(prowurl string, nodeName string) (string, error)
+	// GetNodesLabels returns all labels from all nodes in the cluster as a string
+	GetNodesLabels(prowurl string) (string, error)
+	// GetNodesAnnotations returns all annotations from all nodes in the cluster as a string
+	GetNodesAnnotations(prowurl string) (string, error)
+	// GetNodesConditions returns all conditions from all nodes in the cluster as a string
+	GetNodesConditions(prowurl string) (string, error)
 }
 
 func NewCluster() Cluster {

@@ -81,5 +81,67 @@ func (s *Server) initCluster() []server.ServerTool {
 			result, err := s.cluster.GetContainerLogs(prowurl, podName, namespace, containerName)
 			return NewTextResult(result, err), nil
 		}},
+		{mcp.NewTool("get_nodes_info",
+			mcp.WithDescription("Get information of all nodes in the cluster. Format the output neatly with node name, architecture, OS image, kernel version, and other relevant details."),
+			mcp.WithString("prowurl", mcp.Description("Prow URL to fetch cluster version from"), mcp.Required()),
+		), func(ctx context.Context, ctr mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+			prowurl := ctr.Params.Arguments["prowurl"].(string)
+			result, err := s.cluster.GetNodesInfo(prowurl)
+			return NewTextResult(result, err), nil
+		}},
+		{mcp.NewTool("get_node_info_by_name",
+			mcp.WithDescription("Get information of a specific node by name. Format the output neatly with node name, architecture, OS image, kernel version, and other relevant details."),
+			mcp.WithString("prowurl", mcp.Description("Prow URL to fetch cluster version from"), mcp.Required()),
+			mcp.WithString("nodeName", mcp.Description("Node name to fetch information from"), mcp.Required()),
+		), func(ctx context.Context, ctr mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+			prowurl := ctr.Params.Arguments["prowurl"].(string)
+			nodeName := ctr.Params.Arguments["nodeName"].(string)
+			result, err := s.cluster.GetNodeInfoByName(prowurl, nodeName)
+			return NewTextResult(result, err), nil
+		}},
+		{mcp.NewTool("get_node_labels_by_name",
+			mcp.WithDescription("Get labels of a specific node by name. Format the output neatly with node name and its labels."),
+			mcp.WithString("prowurl", mcp.Description("Prow URL to fetch cluster version from"), mcp.Required()),
+			mcp.WithString("nodeName", mcp.Description("Node name to fetch labels from"), mcp.Required()),
+		), func(ctx context.Context, ctr mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+			prowurl := ctr.Params.Arguments["prowurl"].(string)
+			nodeName := ctr.Params.Arguments["nodeName"].(string)
+			result, err := s.cluster.GetNodeLabelsByName(prowurl, nodeName)
+			return NewTextResult(result, err), nil
+		}},
+		{mcp.NewTool("get_node_annotations_by_name",
+			mcp.WithDescription("Get annotations of a specific node by name. Format the output neatly with node name and its annotations."),
+			mcp.WithString("prowurl", mcp.Description("Prow URL to fetch cluster version from"), mcp.Required()),
+			mcp.WithString("nodeName", mcp.Description("Node name to fetch annotations from"), mcp.Required()),
+		), func(ctx context.Context, ctr mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+			prowurl := ctr.Params.Arguments["prowurl"].(string)
+			nodeName := ctr.Params.Arguments["nodeName"].(string)
+			result, err := s.cluster.GetNodeAnnotationsByName(prowurl, nodeName)
+			return NewTextResult(result, err), nil
+		}},
+		{mcp.NewTool("get_nodes_labels",
+			mcp.WithDescription("Get all labels from all nodes in the cluster. Format the output neatly with node name and its labels."),
+			mcp.WithString("prowurl", mcp.Description("Prow URL to fetch cluster version from"), mcp.Required()),
+		), func(ctx context.Context, ctr mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+			prowurl := ctr.Params.Arguments["prowurl"].(string)
+			result, err := s.cluster.GetNodesLabels(prowurl)
+			return NewTextResult(result, err), nil
+		}},
+		{mcp.NewTool("get_nodes_annotations",
+			mcp.WithDescription("Get all annotations from all nodes in the cluster. Format the output neatly with node name and its annotations."),
+			mcp.WithString("prowurl", mcp.Description("Prow URL to fetch cluster version from"), mcp.Required()),
+		), func(ctx context.Context, ctr mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+			prowurl := ctr.Params.Arguments["prowurl"].(string)
+			result, err := s.cluster.GetNodesAnnotations(prowurl)
+			return NewTextResult(result, err), nil
+		}},
+		{mcp.NewTool("get_nodes_conditions",
+			mcp.WithDescription("Get all conditions from all nodes in the cluster. Format the output neatly with node name and its conditions."),
+			mcp.WithString("prowurl", mcp.Description("Prow URL to fetch cluster version from"), mcp.Required()),
+		), func(ctx context.Context, ctr mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+			prowurl := ctr.Params.Arguments["prowurl"].(string)
+			result, err := s.cluster.GetNodesConditions(prowurl)
+			return NewTextResult(result, err), nil
+		}},
 	}
 }

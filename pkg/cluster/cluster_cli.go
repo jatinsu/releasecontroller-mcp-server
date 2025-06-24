@@ -179,6 +179,140 @@ func (c *clusterCli) GetClusterVersionSummary(prowurl string) (string, error) {
 	return b.String(), nil
 }
 
+func (c *clusterCli) GetNodesInfo(prowurl string) (string, error) {
+	// Fetch the url of the extra folder
+	artifactURL, err := utils.GetGatherExtraFolderPath(prowurl)
+	if err != nil {
+		return "No nodes found", fmt.Errorf("error getting gather extra folder path: %w", err)
+	}
+	// Download the nodes.json file from the artifact URL
+	nodes, err := utils.LoadNodesFromFile(artifactURL + "nodes.json")
+	if err != nil {
+		return "No nodes found", fmt.Errorf("error loading nodes: %w", err)
+	}
+	var b strings.Builder
+	for _, node := range nodes {
+		nodeInfo := utils.GetNodeInfoString(&node)
+		if nodeInfo == "" {
+			nodeInfo = fmt.Sprintf("Node %s has no NodeInfo available", node.Name)
+		}
+		fmt.Fprintf(&b, "Node: %s\n%s\n\n", node.Name, nodeInfo)
+	}
+	return b.String(), nil
+}
+
+func (c *clusterCli) GetNodesLabels(prowurl string) (string, error) {
+	// Fetch the url of the extra folder
+	artifactURL, err := utils.GetGatherExtraFolderPath(prowurl)
+	if err != nil {
+		return "No node labels found", fmt.Errorf("error getting gather extra folder path: %w", err)
+	}
+	// Download the nodes.json file from the artifact URL
+	nodes, err := utils.LoadNodesFromFile(artifactURL + "nodes.json")
+	if err != nil {
+		return "No node labels found", fmt.Errorf("error loading nodes: %w", err)
+	}
+	// Get the labels for all nodes using the GetNodeLabelsString function
+	var b strings.Builder
+	for _, node := range nodes {
+		b.WriteString(utils.GetNodeLabelsString(&node))
+	}
+	return b.String(), nil
+}
+
+func (c *clusterCli) GetNodeInfoByName(prowurl string, nodeName string) (string, error) {
+	// Fetch the url of the extra folder
+	artifactURL, err := utils.GetGatherExtraFolderPath(prowurl)
+	if err != nil {
+		return "Node not found", fmt.Errorf("error getting gather extra folder path: %w", err)
+	}
+	// Download the nodes.json file from the artifact URL
+	nodes, err := utils.LoadNodesFromFile(artifactURL + "nodes.json")
+	if err != nil {
+		return "Node not found", fmt.Errorf("error loading nodes: %w", err)
+	}
+	// Find the node by name
+	node, err := utils.FindNodeByName(nodes, nodeName)
+	if err != nil {
+		return "Node not found", fmt.Errorf("error finding node: %w", err)
+	}
+	return utils.GetNodeInfoString(node), nil
+}
+
+func (c *clusterCli) GetNodeLabelsByName(prowurl string, nodeName string) (string, error) {
+	// Fetch the url of the extra folder
+	artifactURL, err := utils.GetGatherExtraFolderPath(prowurl)
+	if err != nil {
+		return "Node labels not found", fmt.Errorf("error getting gather extra folder path: %w", err)
+	}
+	// Download the nodes.json file from the artifact URL
+	nodes, err := utils.LoadNodesFromFile(artifactURL + "nodes.json")
+	if err != nil {
+		return "Node labels not found", fmt.Errorf("error loading nodes: %w", err)
+	}
+	// Find the node by name
+	node, err := utils.FindNodeByName(nodes, nodeName)
+	if err != nil {
+		return "Node labels not found", fmt.Errorf("error finding node: %w", err)
+	}
+	return utils.GetNodeLabelsString(node), nil
+}
+
+func (c *clusterCli) GetNodesAnnotations(prowurl string) (string, error) {
+	// Fetch the url of the extra folder
+	artifactURL, err := utils.GetGatherExtraFolderPath(prowurl)
+	if err != nil {
+		return "No node annotations found", fmt.Errorf("error getting gather extra folder path: %w", err)
+	}
+	// Download the nodes.json file from the artifact URL
+	nodes, err := utils.LoadNodesFromFile(artifactURL + "nodes.json")
+	if err != nil {
+		return "No node annotations found", fmt.Errorf("error loading nodes: %w", err)
+	}
+	var b strings.Builder
+	for _, node := range nodes {
+		b.WriteString(utils.GetNodeAnnotationsString(&node))
+	}
+	return b.String(), nil
+}
+
+func (c *clusterCli) GetNodeAnnotationsByName(prowurl string, nodeName string) (string, error) {
+	// Fetch the url of the extra folder
+	artifactURL, err := utils.GetGatherExtraFolderPath(prowurl)
+	if err != nil {
+		return "Node annotations not found", fmt.Errorf("error getting gather extra folder path: %w", err)
+	}
+	// Download the nodes.json file from the artifact URL
+	nodes, err := utils.LoadNodesFromFile(artifactURL + "nodes.json")
+	if err != nil {
+		return "Node annotations not found", fmt.Errorf("error loading nodes: %w", err)
+	}
+	// Find the node by name
+	node, err := utils.FindNodeByName(nodes, nodeName)
+	if err != nil {
+		return "Node annotations not found", fmt.Errorf("error finding node: %w", err)
+	}
+	return utils.GetNodeAnnotationsString(node), nil
+}
+
+func (c *clusterCli) GetNodesConditions(prowurl string) (string, error) {
+	// Fetch the url of the extra folder
+	artifactURL, err := utils.GetGatherExtraFolderPath(prowurl)
+	if err != nil {
+		return "No node conditions found", fmt.Errorf("error getting gather extra folder path: %w", err)
+	}
+	// Download the nodes.json file from the artifact URL
+	nodes, err := utils.LoadNodesFromFile(artifactURL + "nodes.json")
+	if err != nil {
+		return "No node conditions found", fmt.Errorf("error loading nodes: %w", err)
+	}
+	var b strings.Builder
+	for _, node := range nodes {
+		b.WriteString(utils.GetNodeConditionsString(&node))
+	}
+	return b.String(), nil
+}
+
 func newClusterCli() *clusterCli {
 	return &clusterCli{}
 }

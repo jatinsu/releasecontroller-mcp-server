@@ -69,15 +69,31 @@ func (s *Server) initReleaseController() []server.ServerTool {
 			mcp.WithString("tag", mcp.Description("The release tag"), mcp.Required()),
 		), s.listComponentsInRelease},
 		{mcp.NewTool("list_test_failures_for_release",
-			mcp.WithDescription("Gets the failing tests for the particular job. List the failing tests in the release if there are any."),
+			mcp.WithDescription("Gets the failing tests for the particular job. List the failing tests in the release if there are any. If there are no failing tests, return a message saying so."),
 			mcp.WithString("prowurl", mcp.Description("The prow job URL"), mcp.Required()),
 		), func(_ context.Context, ctr mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 			prowurl := ctr.Params.Arguments["prowurl"].(string)
 			result, err := s.releaseController.ListTestFailuresForRelease(prowurl)
 			return NewTextResult(result, err), nil
 		}},
+		{mcp.NewTool("get_flaky_tests_for_release",
+			mcp.WithDescription("Gets the flaky tests for the particular job. List the flaky tests in the release if there are any. If there are no flaky tests, return a message saying so."),
+			mcp.WithString("prowurl", mcp.Description("The prow job URL"), mcp.Required()),
+		), func(_ context.Context, ctr mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+			prowurl := ctr.Params.Arguments["prowurl"].(string)
+			result, err := s.releaseController.GetFlakyTestsForRelease(prowurl)
+			return NewTextResult(result, err), nil
+		}},
+		{mcp.NewTool("get_risk_analysis_data",
+			mcp.WithDescription("Gets the risk analysis data for the particular job. List the risk analysis data in the release if there are any. If there is no risk analysis data, return a message saying so."),
+			mcp.WithString("prowurl", mcp.Description("The prow job URL"), mcp.Required()),
+		), func(_ context.Context, ctr mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+			prowurl := ctr.Params.Arguments["prowurl"].(string)
+			result, err := s.releaseController.GetRiskAnalysisData(prowurl)
+			return NewTextResult(result, err), nil
+		}},
 		{mcp.NewTool("analyze_job_failures_for_release",
-			mcp.WithDescription("Gets the build log file for the particular job. Analyze the job information and look for failures. Print a short summary with relevant errors and keep it under 500 words. If the file is a test log file, look for specific failing tests while ignoring Flaky tests and print the exact test name and cause of failure. If the log is too big, ask for compaction threshold string which can be aggresive, moderate or conservative."),
+			mcp.WithDescription("Gets the build log file for the particular job. Analyze the job information and look for failures. Print a short summary with relevant errors. If the log is too big, ask for compaction threshold string which can be aggresive, moderate or conservative."),
 			mcp.WithString("prowurl", mcp.Description("The prow job URL"), mcp.Required()),
 			mcp.WithString("LogCompactionThreshold", mcp.Description("The log compaction threshold string")),
 		), s.analyzeJobFailuresForRelease},

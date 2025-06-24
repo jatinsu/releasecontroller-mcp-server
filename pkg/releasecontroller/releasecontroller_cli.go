@@ -190,7 +190,74 @@ func (r *releaseControllerCli) ListTestFailuresForRelease(prowurl string) (strin
 	if err != nil {
 		return "", fmt.Errorf("error fetching test logs: %w", err)
 	}
-	return utils.ExtractFailingTestsBlock(testLogs), nil
+	testLog, err := utils.ExtractFailingTestsBlock(testLogs)
+	if err != nil {
+		//no failing tests found
+		return fmt.Sprintf("No failing tests found for %s in job %s/%s", testName, name, id), nil
+	}
+	return testLog, nil
+}
+
+// GetFlakyTestsForRelease gets the flaky tests for the particular job
+func (r *releaseControllerCli) GetFlakyTestsForRelease(prowurl string) (string, error) {
+	name, id, err := utils.ExtractProwJobInfo(prowurl)
+	if err != nil {
+		return "", fmt.Errorf("error extracting job info: %w", err)
+	}
+	joburl := fmt.Sprintf("https://storage.googleapis.com/test-platform-results/logs/%s/%s/build-log.txt", name, id)
+	data, err := utils.FetchURL(joburl)
+	if err != nil {
+		return "", fmt.Errorf("error fetching job log: %w", err)
+	}
+	stepName, err := utils.ExtractStepName(data)
+	if err != nil {
+		return "", fmt.Errorf("Could not find failure step - not a test run", err)
+	}
+	testName, err := utils.ExtractTestNameFromURL(prowurl)
+	if err != nil {
+		return "", fmt.Errorf("error fetching test name: %w", err)
+	}
+	if !strings.HasPrefix(stepName, testName+"-") {
+		return "", fmt.Errorf("stepName does not start with testName prefix")
+	}
+	stepFolder := strings.TrimPrefix(stepName, testName+"-")
+	artifactURL := fmt.Sprintf("https://gcsweb-ci.apps.ci.l2s4.p1.openshiftapps.com/gcs/test-platform-results/logs/%s/%s/artifacts/%s/%s/build-log.txt", name, id, testName, stepFolder)
+	testLogs, err := utils.FetchURL(artifactURL)
+	if err != nil {
+		return "", fmt.Errorf("error fetching test logs: %w", err)
+	}
+	testLog, _ := utils.ExtractFlakyTestsBlock(testLogs)
+	return testLog, nil
+}
+
+func (r *releaseControllerCli) GetRiskAnalysisData(prowurl string) (string, error) {
+	name, id, err := utils.ExtractProwJobInfo(prowurl)
+	if err != nil {
+		return "", fmt.Errorf("error extracting job info: %w", err)
+	}
+	joburl := fmt.Sprintf("https://storage.googleapis.com/test-platform-results/logs/%s/%s/build-log.txt", name, id)
+	data, err := utils.FetchURL(joburl)
+	if err != nil {
+		return "", fmt.Errorf("error fetching job log: %w", err)
+	}
+	stepName, err := utils.ExtractStepName(data)
+	if err != nil {
+		return "", fmt.Errorf("Could not find failure step - not a test run", err)
+	}
+	testName, err := utils.ExtractTestNameFromURL(prowurl)
+	if err != nil {
+		return "", fmt.Errorf("error fetching test name: %w", err)
+	}
+	if !strings.HasPrefix(stepName, testName+"-") {
+		return "", fmt.Errorf("stepName does not start with testName prefix")
+	}
+	stepFolder := strings.TrimPrefix(stepName, testName+"-")
+	artifactURL := fmt.Sprintf("https://gcsweb-ci.apps.ci.l2s4.p1.openshiftapps.com/gcs/test-platform-results/logs/%s/%s/artifacts/%s/%s/artifacts/junit/risk-analysis.json", name, id, testName, stepFolder)
+	riskAnalysisLogs, err := utils.FetchURL(artifactURL)
+	if err != nil {
+		return "", fmt.Errorf("risk analysis logs not present: %w", err)
+	}
+	return riskAnalysisLogs, nil
 }
 
 // AnalyzeJobFailuresForRelease gets the build log file for the particular job
@@ -268,6 +335,11 @@ func (r *releaseControllerCli) AnalyzeJobFailuresForRelease(prowurl string, LogC
 		}
 		// If the step is an e2e test, we want to compact the logs
 		testLogs = utils.CompactTestLogs(testLogs, threshold)
+	}
+	monitorLogs, err := utils.ExtractMonitorTestFailures(testLogs)
+	if err == nil {
+		// If monitor logs are found, return them as there were no test failures
+		return monitorLogs, nil
 	}
 	return testLogs, nil
 }
