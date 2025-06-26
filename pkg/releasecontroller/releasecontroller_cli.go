@@ -304,6 +304,18 @@ func (r *releaseControllerCli) AnalyzeJobFailuresForRelease(prowurl string, LogC
 			return "", fmt.Errorf("error fetching aggregate job failures: %w", err)
 		}
 		return overallAnalysisJobFailues, nil
+	case "release-payload-upgrade-analysis-all-openshift-release-analysis-test-case-analysis":
+		artifactURL = fmt.Sprintf("https://gcsweb-ci.apps.ci.l2s4.p1.openshiftapps.com/gcs/test-platform-results/logs/%s/%s/artifacts/release-payload-upgrade-analysis-all/openshift-release-analysis-test-case-analysis/build-log.txt", name, id)
+		upgradeAnalysisLogs, err := utils.FetchURL(artifactURL)
+		if err != nil {
+			return "", fmt.Errorf("error fetching test logs: %w", err)
+		}
+		artifactURL = strings.TrimSuffix(artifactURL, "build-log.txt") + "artifacts"
+		upgradeAnalysisJobFailues, err := utils.FetchAggregateJobFailures(artifactURL, upgradeAnalysisLogs)
+		if err != nil {
+			return "", fmt.Errorf("error fetching aggregate job failures: %w", err)
+		}
+		return upgradeAnalysisJobFailues, nil
 	default:
 		testName, err := utils.ExtractTestNameFromURL(prowurl)
 		if err != nil {
