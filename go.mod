@@ -5,17 +5,19 @@ go 1.24.0
 toolchain go1.24.2
 
 require (
+	github.com/PuerkitoBio/goquery v1.10.3
 	github.com/agnivade/levenshtein v1.2.1
 	github.com/mark3labs/mcp-go v0.17.0
 	github.com/openshift/api v0.0.0-20250617101714-cb94c55220b6
 	github.com/spf13/cobra v1.9.1
 	github.com/spf13/viper v1.20.1
-	golang.org/x/net v0.38.0
+	golang.org/x/net v0.39.0
 	k8s.io/api v0.33.1
 	k8s.io/apimachinery v0.33.1
 )
 
 require (
+	github.com/andybalholm/cascadia v1.3.3 // indirect
 	github.com/fsnotify/fsnotify v1.8.0 // indirect
 	github.com/fxamacker/cbor/v2 v2.7.0 // indirect
 	github.com/go-logr/logr v1.4.2 // indirect
@@ -36,8 +38,8 @@ require (
 	github.com/x448/float16 v0.8.4 // indirect
 	github.com/yosida95/uritemplate/v3 v3.0.2 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	golang.org/x/sys v0.31.0 // indirect
-	golang.org/x/text v0.23.0 // indirect
+	golang.org/x/sys v0.32.0 // indirect
+	golang.org/x/text v0.24.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	k8s.io/klog/v2 v2.130.1 // indirect

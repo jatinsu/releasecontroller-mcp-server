@@ -32,6 +32,8 @@ type ReleaseController interface {
 	GetFlakyTestsForRelease(prowurl string) (string, error)
 	// GetRiskAnalysisData gets the risk analysis data for the particular job
 	GetRiskAnalysisData(prowurl string) (string, error)
+	// GetSpyglassDataRelevantToTestFailure gets the spyglass data relevant to a test failure
+	GetSpyglassDataRelevantToTestFailure(prowurl string, testName string) (string, error)
 	// AnalyzeJobFailuresForRelease gets the build log file for the particular job
 	AnalyzeJobFailuresForRelease(url string, LogCompactionThreshold string) (string, error)
 	// List issues which are features from updated images commits - excludes OCPBUGS/CVEs

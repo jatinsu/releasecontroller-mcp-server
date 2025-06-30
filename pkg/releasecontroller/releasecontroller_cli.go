@@ -260,6 +260,50 @@ func (r *releaseControllerCli) GetRiskAnalysisData(prowurl string) (string, erro
 	return riskAnalysisLogs, nil
 }
 
+func (r *releaseControllerCli) GetSpyglassDataRelevantToTestFailure(prowurl string, testName string) (string, error) {
+	name, id, err := utils.ExtractProwJobInfo(prowurl)
+	if err != nil {
+		return "", fmt.Errorf("error extracting job info: %w", err)
+	}
+	joburl := fmt.Sprintf("https://storage.googleapis.com/test-platform-results/logs/%s/%s/build-log.txt", name, id)
+	data, err := utils.FetchURL(joburl)
+	if err != nil {
+		return "", fmt.Errorf("error fetching job log: %w", err)
+	}
+	stepName, err := utils.ExtractStepName(data)
+	if err != nil {
+		return "", fmt.Errorf("Could not find failure step - not a test run", err)
+	}
+	testFolderName, err := utils.ExtractTestNameFromURL(prowurl)
+	if err != nil {
+		return "", fmt.Errorf("error fetching test folder name: %w", err)
+	}
+	if !strings.HasPrefix(stepName, testFolderName+"-") {
+		return "", fmt.Errorf("stepName does not start with testName prefix")
+	}
+	stepFolder := strings.TrimPrefix(stepName, testFolderName+"-")
+	var errorEvents string
+	spyglassFiles, err := utils.GetSpyglassFileNames(name, id, testFolderName, stepFolder)
+	if err != nil {
+		return "No spyglass files found", fmt.Errorf("failed to get spyglass file names: %w", err)
+	}
+	for _, spyglassFileName := range spyglassFiles {
+		artifactURL := fmt.Sprintf("https://gcsweb-ci.apps.ci.l2s4.p1.openshiftapps.com/gcs/test-platform-results/logs/%s/%s/artifacts/%s/%s/artifacts/junit/%s", name, id, testFolderName, stepFolder, strings.TrimPrefix(spyglassFileName, " "))
+		events, err := utils.GetSpyglassDataRelevantToTestFailure(artifactURL, testName)
+		if err != nil {
+			return "No data available", fmt.Errorf("failed to get error and warning events: %w", err)
+		}
+		errorEvents += events
+	}
+	if errorEvents == "" {
+		if len(spyglassFiles) <= 0 {
+			return "No spyglass files??", nil
+		}
+		return "No error or warning events found in spyglass data" + spyglassFiles[0], nil
+	}
+	return errorEvents, nil
+}
+
 // AnalyzeJobFailuresForRelease gets the build log file for the particular job
 func (r *releaseControllerCli) AnalyzeJobFailuresForRelease(prowurl string, LogCompactionThreshold string) (string, error) {
 	name, id, err := utils.ExtractProwJobInfo(prowurl)
