@@ -304,6 +304,39 @@ func (r *releaseControllerCli) GetSpyglassDataRelevantToTestFailure(prowurl stri
 	return errorEvents, nil
 }
 
+// GetTopLevelBuildLog gets the top-level build log for a given Prow job URL
+func (r *releaseControllerCli) GetTopLevelBuildLog(prowurl string, LogCompactionThreshold string) (string, error) {
+	name, id, err := utils.ExtractProwJobInfo(prowurl)
+	if err != nil {
+		return "", fmt.Errorf("error extracting job info: %w", err)
+	}
+	joburl := fmt.Sprintf("https://storage.googleapis.com/test-platform-results/logs/%s/%s/build-log.txt", name, id)
+	data, err := utils.FetchURL(joburl)
+	if err != nil {
+		return "", fmt.Errorf("error fetching job log: %w", err)
+	}
+
+	var compactedLogs string
+	if strings.Contains(data, "e2e") {
+		var threshold float64
+		switch LogCompactionThreshold {
+		case "aggressive":
+			threshold = 0.5 // Aggressive compaction threshold
+		case "moderate":
+			threshold = 0.8 // Moderate compaction threshold
+		case "conservative":
+			threshold = 0.9 // Conservative compaction threshold
+		default:
+			threshold = 1.0 // Default threshold (only removes exact duplicates)
+		}
+		compactedLogs = utils.CompactTestLogs(data, threshold)
+	} else {
+		compactedLogs = data
+	}
+
+	return compactedLogs, nil
+}
+
 // AnalyzeJobFailuresForRelease gets the build log file for the particular job
 func (r *releaseControllerCli) AnalyzeJobFailuresForRelease(prowurl string, LogCompactionThreshold string) (string, error) {
 	name, id, err := utils.ExtractProwJobInfo(prowurl)

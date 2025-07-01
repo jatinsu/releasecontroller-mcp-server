@@ -28,9 +28,11 @@ GENERAL FLOW FOR FAILURE ANALYSIS:
 
 - If these above tools provide you data, summarize them neatly to the user and DO NOT do further analysis unless requested
 
-- If list_test_failures_for_release tool lists failed tests, but get_risk_analysis_data tool does not have any data, proceed to analyze the job only in the context of why these tests failed
+- If list_test_failures_for_release tool lists failed tests, but get_risk_analysis_data tool does not have any data, proceed to analyze the job only in the context of why these tests failed with the analyze_job_failures_for_release tool.
 
-- If list_test_failures_for_release tool does not list any failed tests, proceed to analyze the job data with moderate compaction and summarize the most important failures.
+- If list_test_failures_for_release tool does not list any failed tests, proceed to analyze the job data with moderate compaction using the analyze_job_failures_for_release tool and summarize the most important failures.
+
+- If none of the above steps show any sign of error or test failures, proceed to get the top level build-log.txt using get_top_level_build_log tool and analyze the results.
 
 - If the user asks for even more analysis of a particular failed tests or a bunch of failed tests, even after you have analyzed the job data - proceed to spyglass analysis.
 

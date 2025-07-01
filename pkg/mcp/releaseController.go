@@ -102,6 +102,21 @@ func (s *Server) initReleaseController() []server.ServerTool {
 			result, err := s.releaseController.GetSpyglassDataRelevantToTestFailure(prowurl, testName)
 			return NewTextResult(result, err), nil
 		}},
+		{mcp.NewTool("get_top_level_build_log",
+			mcp.WithDescription("Gets the top-level build log for a given Prow job URL. If the log is too big, ask for compaction threshold string which can be aggresive, moderate or conservative."),
+			mcp.WithString("prowurl", mcp.Description("The prow job URL"), mcp.Required()),
+			mcp.WithString("LogCompactionThreshold", mcp.Description("The log compaction threshold string")),
+		), func(_ context.Context, ctr mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+			var logCompactionThreshold string
+			prowurl := ctr.Params.Arguments["prowurl"].(string)
+			if strVal, ok := ctr.Params.Arguments["LogCompactionThreshold"].(string); !ok {
+				logCompactionThreshold = "exact" // Default value if not provided
+			} else {
+				logCompactionThreshold = strVal
+			}
+			result, err := s.releaseController.GetTopLevelBuildLog(prowurl, logCompactionThreshold)
+			return NewTextResult(result, err), nil
+		}},
 		{mcp.NewTool("analyze_job_failures_for_release",
 			mcp.WithDescription("Gets the build log file for the particular job. Analyze the job information and look for failures. Print a short summary with relevant errors. If the log is too big, ask for compaction threshold string which can be aggresive, moderate or conservative."),
 			mcp.WithString("prowurl", mcp.Description("The prow job URL"), mcp.Required()),

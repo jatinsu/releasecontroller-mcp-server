@@ -34,6 +34,8 @@ type ReleaseController interface {
 	GetRiskAnalysisData(prowurl string) (string, error)
 	// GetSpyglassDataRelevantToTestFailure gets the spyglass data relevant to a test failure
 	GetSpyglassDataRelevantToTestFailure(prowurl string, testName string) (string, error)
+	//GetTopLevelBuildLog gets the top-level build log for a given Prow job URL
+	GetTopLevelBuildLog(prowurl string, LogCompactionThreshold string) (string, error)
 	// AnalyzeJobFailuresForRelease gets the build log file for the particular job
 	AnalyzeJobFailuresForRelease(url string, LogCompactionThreshold string) (string, error)
 	// List issues which are features from updated images commits - excludes OCPBUGS/CVEs
