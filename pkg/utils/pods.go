@@ -161,6 +161,10 @@ func ErrorStateSummary(pods []corev1.Pod) string {
 				fmt.Fprintf(&b, "%s/%s: %s\n", pod.Namespace, pod.Name, cs.State.Waiting.Reason)
 				break
 			}
+			if cs.State.Terminated != nil && cs.State.Terminated.Reason == "Error" {
+				fmt.Fprintf(&b, "%s/%s: %s\n", pod.Namespace, pod.Name, cs.State.Terminated.Reason)
+				break
+			}
 		}
 	}
 	if b.Len() > 0 {
