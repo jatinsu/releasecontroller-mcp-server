@@ -359,15 +359,15 @@ func FetchAggregateJobFailures(baseUrl, logData string) (string, error) {
 }
 
 func GetGatherExtraFolderPath(prowurl string) (string, error) {
-	name, id, err := ExtractProwJobInfo(prowurl)
-	if err != nil {
-		return "", fmt.Errorf("error extracting job info: %w", err)
+	logsPath := ExtractPath(prowurl)
+	if logsPath == "" {
+		return "", fmt.Errorf("invalid Prow job URL: %s", prowurl)
 	}
 	testName, err := ExtractTestNameFromURL(prowurl)
 	if err != nil {
 		return "", fmt.Errorf("error fetching test name: %w", err)
 	}
-	gatherExtraURL := fmt.Sprintf("https://gcsweb-ci.apps.ci.l2s4.p1.openshiftapps.com/gcs/test-platform-results/logs/%s/%s/artifacts/%s/gather-extra/artifacts/", name, id, testName)
+	gatherExtraURL := fmt.Sprintf("https://gcsweb-ci.apps.ci.l2s4.p1.openshiftapps.com/gcs/%s/artifacts/%s/gather-extra/artifacts/", logsPath, testName)
 	return gatherExtraURL, nil
 }
 
@@ -382,4 +382,12 @@ func IndentMultiline(s, indent string) string {
 		lines[i] = indent + line
 	}
 	return strings.Join(lines, "\n")
+}
+
+func ExtractPath(url string) string {
+	const prefix = "https://prow.ci.openshift.org/view/gs/"
+	if strings.HasPrefix(url, prefix) {
+		return strings.TrimPrefix(url, prefix)
+	}
+	return ""
 }

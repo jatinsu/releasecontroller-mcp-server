@@ -79,7 +79,18 @@ func RunningPodsSummary(pods []corev1.Pod) string {
 	var b strings.Builder
 	for _, pod := range pods {
 		if pod.Status.Phase == corev1.PodRunning {
-			fmt.Fprintf(&b, "%s/%s on %s: Running\n", pod.Namespace, pod.Name, pod.Spec.NodeName)
+			running := true
+			for _, cs := range pod.Status.ContainerStatuses {
+				if cs.State.Running != nil {
+					continue
+				} else {
+					running = false
+					break
+				}
+			}
+			if running {
+				fmt.Fprintf(&b, "%s/%s on %s: Running\n", pod.Namespace, pod.Name, pod.Spec.NodeName)
+			}
 		}
 	}
 	if b.Len() > 0 {
@@ -179,7 +190,17 @@ func FilterPodsByNamespaceAsString(pods []corev1.Pod, namespace string) string {
 	var b strings.Builder
 	for _, pod := range pods {
 		if pod.Namespace == namespace {
-			fmt.Fprintf(&b, "%s/%s on %s: %s\n", pod.Namespace, pod.Name, pod.Spec.NodeName, pod.Status.Phase)
+			fmt.Fprintf(&b, "%s/%s on %s: ", pod.Namespace, pod.Name, pod.Spec.NodeName)
+			for _, cs := range pod.Status.ContainerStatuses {
+				if cs.State.Waiting != nil && (cs.State.Waiting.Reason == "Error" || cs.State.Waiting.Reason == "CrashLoopBackOff" || cs.State.Waiting.Reason == "Init") {
+					fmt.Fprintf(&b, "%s %s\n", cs.State.Waiting.Reason, cs.State.Waiting.Message)
+					break
+				}
+				if cs.State.Terminated != nil && cs.State.Terminated.Reason == "Error" {
+					fmt.Fprintf(&b, "%s %s\n", cs.State.Terminated.Reason, cs.State.Terminated.Message)
+					break
+				}
+			}
 		}
 	}
 	if b.Len() > 0 {

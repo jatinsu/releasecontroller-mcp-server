@@ -164,11 +164,11 @@ func (r *releaseControllerCli) ListComponentsInRelease(releasecontroller, stream
 
 // ListTestFailuresForRelease gets the failing tests for the particular job
 func (r *releaseControllerCli) ListTestFailuresForRelease(prowurl string) (string, error) {
-	name, id, err := utils.ExtractProwJobInfo(prowurl)
-	if err != nil {
-		return "", fmt.Errorf("error extracting job info: %w", err)
+	logsPath := utils.ExtractPath(prowurl)
+	if logsPath == "" {
+		return "", fmt.Errorf("invalid Prow job URL: %s", prowurl)
 	}
-	joburl := fmt.Sprintf("https://storage.googleapis.com/test-platform-results/logs/%s/%s/build-log.txt", name, id)
+	joburl := fmt.Sprintf("https://storage.googleapis.com/%s/build-log.txt", logsPath)
 	data, err := utils.FetchURL(joburl)
 	if err != nil {
 		return "", fmt.Errorf("error fetching job log: %w", err)
@@ -185,7 +185,7 @@ func (r *releaseControllerCli) ListTestFailuresForRelease(prowurl string) (strin
 		return "", fmt.Errorf("stepName does not start with testName prefix")
 	}
 	stepFolder := strings.TrimPrefix(stepName, testName+"-")
-	artifactURL := fmt.Sprintf("https://gcsweb-ci.apps.ci.l2s4.p1.openshiftapps.com/gcs/test-platform-results/logs/%s/%s/artifacts/%s/%s/build-log.txt", name, id, testName, stepFolder)
+	artifactURL := fmt.Sprintf("https://gcsweb-ci.apps.ci.l2s4.p1.openshiftapps.com/gcs/%s/artifacts/%s/%s/build-log.txt", logsPath, testName, stepFolder)
 	testLogs, err := utils.FetchURL(artifactURL)
 	if err != nil {
 		return "", fmt.Errorf("error fetching test logs: %w", err)
@@ -193,18 +193,18 @@ func (r *releaseControllerCli) ListTestFailuresForRelease(prowurl string) (strin
 	testLog, err := utils.ExtractFailingTestsBlock(testLogs)
 	if err != nil {
 		//no failing tests found
-		return fmt.Sprintf("No failing tests found for %s in job %s/%s", testName, name, id), nil
+		return fmt.Sprintf("No failing tests found for %s in job", testName), nil
 	}
 	return testLog, nil
 }
 
 // GetFlakyTestsForRelease gets the flaky tests for the particular job
 func (r *releaseControllerCli) GetFlakyTestsForRelease(prowurl string) (string, error) {
-	name, id, err := utils.ExtractProwJobInfo(prowurl)
-	if err != nil {
-		return "", fmt.Errorf("error extracting job info: %w", err)
+	logsPath := utils.ExtractPath(prowurl)
+	if logsPath == "" {
+		return "", fmt.Errorf("invalid Prow job URL: %s", prowurl)
 	}
-	joburl := fmt.Sprintf("https://storage.googleapis.com/test-platform-results/logs/%s/%s/build-log.txt", name, id)
+	joburl := fmt.Sprintf("https://storage.googleapis.com/%s/build-log.txt", logsPath)
 	data, err := utils.FetchURL(joburl)
 	if err != nil {
 		return "", fmt.Errorf("error fetching job log: %w", err)
@@ -221,7 +221,7 @@ func (r *releaseControllerCli) GetFlakyTestsForRelease(prowurl string) (string, 
 		return "", fmt.Errorf("stepName does not start with testName prefix")
 	}
 	stepFolder := strings.TrimPrefix(stepName, testName+"-")
-	artifactURL := fmt.Sprintf("https://gcsweb-ci.apps.ci.l2s4.p1.openshiftapps.com/gcs/test-platform-results/logs/%s/%s/artifacts/%s/%s/build-log.txt", name, id, testName, stepFolder)
+	artifactURL := fmt.Sprintf("https://gcsweb-ci.apps.ci.l2s4.p1.openshiftapps.com/gcs/%s/artifacts/%s/%s/build-log.txt", logsPath, testName, stepFolder)
 	testLogs, err := utils.FetchURL(artifactURL)
 	if err != nil {
 		return "", fmt.Errorf("error fetching test logs: %w", err)
@@ -231,11 +231,11 @@ func (r *releaseControllerCli) GetFlakyTestsForRelease(prowurl string) (string, 
 }
 
 func (r *releaseControllerCli) GetRiskAnalysisData(prowurl string) (string, error) {
-	name, id, err := utils.ExtractProwJobInfo(prowurl)
-	if err != nil {
-		return "", fmt.Errorf("error extracting job info: %w", err)
+	logsPath := utils.ExtractPath(prowurl)
+	if logsPath == "" {
+		return "", fmt.Errorf("invalid Prow job URL: %s", prowurl)
 	}
-	joburl := fmt.Sprintf("https://storage.googleapis.com/test-platform-results/logs/%s/%s/build-log.txt", name, id)
+	joburl := fmt.Sprintf("https://storage.googleapis.com/%s/build-log.txt", logsPath)
 	data, err := utils.FetchURL(joburl)
 	if err != nil {
 		return "", fmt.Errorf("error fetching job log: %w", err)
@@ -252,7 +252,7 @@ func (r *releaseControllerCli) GetRiskAnalysisData(prowurl string) (string, erro
 		return "", fmt.Errorf("stepName does not start with testName prefix")
 	}
 	stepFolder := strings.TrimPrefix(stepName, testName+"-")
-	artifactURL := fmt.Sprintf("https://gcsweb-ci.apps.ci.l2s4.p1.openshiftapps.com/gcs/test-platform-results/logs/%s/%s/artifacts/%s/%s/artifacts/junit/risk-analysis.json", name, id, testName, stepFolder)
+	artifactURL := fmt.Sprintf("https://gcsweb-ci.apps.ci.l2s4.p1.openshiftapps.com/gcs/%s/artifacts/%s/%s/artifacts/junit/risk-analysis.json", logsPath, testName, stepFolder)
 	riskAnalysisLogs, err := utils.FetchURL(artifactURL)
 	if err != nil {
 		return "", fmt.Errorf("risk analysis logs not present: %w", err)
@@ -261,11 +261,11 @@ func (r *releaseControllerCli) GetRiskAnalysisData(prowurl string) (string, erro
 }
 
 func (r *releaseControllerCli) GetSpyglassDataRelevantToTestFailure(prowurl string, testName string) (string, error) {
-	name, id, err := utils.ExtractProwJobInfo(prowurl)
-	if err != nil {
-		return "", fmt.Errorf("error extracting job info: %w", err)
+	logsPath := utils.ExtractPath(prowurl)
+	if logsPath == "" {
+		return "", fmt.Errorf("invalid Prow job URL: %s", prowurl)
 	}
-	joburl := fmt.Sprintf("https://storage.googleapis.com/test-platform-results/logs/%s/%s/build-log.txt", name, id)
+	joburl := fmt.Sprintf("https://storage.googleapis.com/%s/build-log.txt", logsPath)
 	data, err := utils.FetchURL(joburl)
 	if err != nil {
 		return "", fmt.Errorf("error fetching job log: %w", err)
@@ -283,12 +283,12 @@ func (r *releaseControllerCli) GetSpyglassDataRelevantToTestFailure(prowurl stri
 	}
 	stepFolder := strings.TrimPrefix(stepName, testFolderName+"-")
 	var errorEvents string
-	spyglassFiles, err := utils.GetSpyglassFileNames(name, id, testFolderName, stepFolder)
+	spyglassFiles, err := utils.GetSpyglassFileNames(logsPath, testFolderName, stepFolder)
 	if err != nil {
 		return "No spyglass files found", fmt.Errorf("failed to get spyglass file names: %w", err)
 	}
 	for _, spyglassFileName := range spyglassFiles {
-		artifactURL := fmt.Sprintf("https://gcsweb-ci.apps.ci.l2s4.p1.openshiftapps.com/gcs/test-platform-results/logs/%s/%s/artifacts/%s/%s/artifacts/junit/%s", name, id, testFolderName, stepFolder, strings.TrimPrefix(spyglassFileName, " "))
+		artifactURL := fmt.Sprintf("https://gcsweb-ci.apps.ci.l2s4.p1.openshiftapps.com/gcs/%s/artifacts/%s/%s/artifacts/junit/%s", logsPath, testFolderName, stepFolder, strings.TrimPrefix(spyglassFileName, " "))
 		events, err := utils.GetSpyglassDataRelevantToTestFailure(artifactURL, testName)
 		if err != nil {
 			return "No data available", fmt.Errorf("failed to get error and warning events: %w", err)
@@ -306,11 +306,11 @@ func (r *releaseControllerCli) GetSpyglassDataRelevantToTestFailure(prowurl stri
 
 // GetTopLevelBuildLog gets the top-level build log for a given Prow job URL
 func (r *releaseControllerCli) GetTopLevelBuildLog(prowurl string, LogCompactionThreshold string) (string, error) {
-	name, id, err := utils.ExtractProwJobInfo(prowurl)
-	if err != nil {
-		return "", fmt.Errorf("error extracting job info: %w", err)
+	logsPath := utils.ExtractPath(prowurl)
+	if logsPath == "" {
+		return "", fmt.Errorf("invalid Prow job URL: %s", prowurl)
 	}
-	joburl := fmt.Sprintf("https://storage.googleapis.com/test-platform-results/logs/%s/%s/build-log.txt", name, id)
+	joburl := fmt.Sprintf("https://storage.googleapis.com/%s/build-log.txt", logsPath)
 	data, err := utils.FetchURL(joburl)
 	if err != nil {
 		return "", fmt.Errorf("error fetching job log: %w", err)
@@ -339,11 +339,11 @@ func (r *releaseControllerCli) GetTopLevelBuildLog(prowurl string, LogCompaction
 
 // AnalyzeJobFailuresForRelease gets the build log file for the particular job
 func (r *releaseControllerCli) AnalyzeJobFailuresForRelease(prowurl string, LogCompactionThreshold string) (string, error) {
-	name, id, err := utils.ExtractProwJobInfo(prowurl)
-	if err != nil {
-		return "", fmt.Errorf("error extracting job info: %w", err)
+	logsPath := utils.ExtractPath(prowurl)
+	if logsPath == "" {
+		return "", fmt.Errorf("invalid Prow job URL: %s", prowurl)
 	}
-	joburl := fmt.Sprintf("https://storage.googleapis.com/test-platform-results/logs/%s/%s/build-log.txt", name, id)
+	joburl := fmt.Sprintf("https://storage.googleapis.com/%s/build-log.txt", logsPath)
 	data, err := utils.FetchURL(joburl)
 	if err != nil {
 		return "", fmt.Errorf("error fetching job log: %w", err)
@@ -356,9 +356,9 @@ func (r *releaseControllerCli) AnalyzeJobFailuresForRelease(prowurl string, LogC
 	var artifactURL string
 	switch stepName {
 	case "release-analysis-aggregator-openshift-release-analysis-aggregator":
-		artifactURL = fmt.Sprintf("https://gcsweb-ci.apps.ci.l2s4.p1.openshiftapps.com/gcs/test-platform-results/logs/%s/%s/artifacts/release-analysis-aggregator/openshift-release-analysis-aggregator/build-log.txt", name, id)
+		artifactURL = fmt.Sprintf("https://gcsweb-ci.apps.ci.l2s4.p1.openshiftapps.com/gcs/%s/artifacts/release-analysis-aggregator/openshift-release-analysis-aggregator/build-log.txt", logsPath)
 	case "release-payload-install-analysis-openshift-release-analysis-test-case-analysis":
-		artifactURL = fmt.Sprintf("https://gcsweb-ci.apps.ci.l2s4.p1.openshiftapps.com/gcs/test-platform-results/logs/%s/%s/artifacts/release-payload-install-analysis/openshift-release-analysis-test-case-analysis/build-log.txt", name, id)
+		artifactURL = fmt.Sprintf("https://gcsweb-ci.apps.ci.l2s4.p1.openshiftapps.com/gcs/%s/artifacts/release-payload-install-analysis/openshift-release-analysis-test-case-analysis/build-log.txt", logsPath)
 		installAnalysisLogs, err := utils.FetchURL(artifactURL)
 		if err != nil {
 			return "", fmt.Errorf("error fetching test logs: %w", err)
@@ -370,7 +370,7 @@ func (r *releaseControllerCli) AnalyzeJobFailuresForRelease(prowurl string, LogC
 		}
 		return installAnalysisJobFailues, nil
 	case "release-payload-overall-analysis-all-openshift-release-analysis-test-case-analysis":
-		artifactURL = fmt.Sprintf("https://gcsweb-ci.apps.ci.l2s4.p1.openshiftapps.com/gcs/test-platform-results/logs/%s/%s/artifacts/release-payload-overall-analysis-all/openshift-release-analysis-test-case-analysis/build-log.txt", name, id)
+		artifactURL = fmt.Sprintf("https://gcsweb-ci.apps.ci.l2s4.p1.openshiftapps.com/gcs/%s/artifacts/release-payload-overall-analysis-all/openshift-release-analysis-test-case-analysis/build-log.txt", logsPath)
 		overallAnalysisLogs, err := utils.FetchURL(artifactURL)
 		if err != nil {
 			return "", fmt.Errorf("error fetching test logs: %w", err)
@@ -382,7 +382,7 @@ func (r *releaseControllerCli) AnalyzeJobFailuresForRelease(prowurl string, LogC
 		}
 		return overallAnalysisJobFailues, nil
 	case "release-payload-upgrade-analysis-all-openshift-release-analysis-test-case-analysis":
-		artifactURL = fmt.Sprintf("https://gcsweb-ci.apps.ci.l2s4.p1.openshiftapps.com/gcs/test-platform-results/logs/%s/%s/artifacts/release-payload-upgrade-analysis-all/openshift-release-analysis-test-case-analysis/build-log.txt", name, id)
+		artifactURL = fmt.Sprintf("https://gcsweb-ci.apps.ci.l2s4.p1.openshiftapps.com/gcs/%s/artifacts/release-payload-upgrade-analysis-all/openshift-release-analysis-test-case-analysis/build-log.txt", logsPath)
 		upgradeAnalysisLogs, err := utils.FetchURL(artifactURL)
 		if err != nil {
 			return "", fmt.Errorf("error fetching test logs: %w", err)
@@ -403,7 +403,7 @@ func (r *releaseControllerCli) AnalyzeJobFailuresForRelease(prowurl string, LogC
 			return "", fmt.Errorf("stepName does not start with testName prefix")
 		}
 		stepFolder := strings.TrimPrefix(stepName, testName+"-")
-		artifactURL = fmt.Sprintf("https://gcsweb-ci.apps.ci.l2s4.p1.openshiftapps.com/gcs/test-platform-results/logs/%s/%s/artifacts/%s/%s/build-log.txt", name, id, testName, stepFolder)
+		artifactURL = fmt.Sprintf("https://gcsweb-ci.apps.ci.l2s4.p1.openshiftapps.com/gcs/%s/artifacts/%s/%s/build-log.txt", logsPath, testName, stepFolder)
 	}
 
 	testLogs, err := utils.FetchURL(artifactURL)

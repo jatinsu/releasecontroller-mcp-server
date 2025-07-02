@@ -41,7 +41,7 @@ type Report struct {
 	Items []EventInterval `json:"items"`
 }
 
-func GetSpyglassFileNames(name, id, testName, stepFolder string) ([]string, error) {
+func GetSpyglassFileNames(logsPath, testName, stepFolder string) ([]string, error) {
 	// Compile the regex pattern
 	pattern := `e2e-timelines_spyglass_.*\.json$`
 	re, err := regexp.Compile(pattern)
@@ -50,7 +50,7 @@ func GetSpyglassFileNames(name, id, testName, stepFolder string) ([]string, erro
 	}
 
 	// Make the HTTP GET request
-	artifactURL := fmt.Sprintf("https://gcsweb-ci.apps.ci.l2s4.p1.openshiftapps.com/gcs/test-platform-results/logs/%s/%s/artifacts/%s/%s/artifacts/junit/", name, id, testName, stepFolder)
+	artifactURL := fmt.Sprintf("https://gcsweb-ci.apps.ci.l2s4.p1.openshiftapps.com/gcs/%s/artifacts/%s/%s/artifacts/junit/", logsPath, testName, stepFolder)
 	resp, err := http.Get(artifactURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch URL: %w", err)
