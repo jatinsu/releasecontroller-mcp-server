@@ -46,6 +46,11 @@ func (s *Server) initReleaseController() []server.ServerTool {
 			mcp.WithDescription("Lists all the release streams in the release controller."),
 			mcp.WithString("releasecontroller", mcp.Description("The release controller host to query"), mcp.Required()),
 		), s.listReleaseStreams},
+		{mcp.NewTool("latest_release",
+			mcp.WithDescription("Gets the latest release for a given release stream."),
+			mcp.WithString("releasecontroller", mcp.Description("The release controller host to query"), mcp.Required()),
+			mcp.WithString("stream", mcp.Description("The release stream name"), mcp.Required()),
+		), s.latestReleaseWithPhase},
 		{mcp.NewTool("latest_accepted_release",
 			mcp.WithDescription("Gets the latest accepted release for a given release stream."),
 			mcp.WithString("releasecontroller", mcp.Description("The release controller host to query"), mcp.Required()),
@@ -168,6 +173,13 @@ func (s *Server) listReleaseControllers(_ context.Context, ctr mcp.CallToolReque
 func (s *Server) listReleaseStreams(_ context.Context, ctr mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	releasecontroller := ctr.Params.Arguments["releasecontroller"].(string)
 	result, err := s.releaseController.ListReleaseStreams(releasecontroller)
+	return NewTextResult(result, err), nil
+}
+
+func (s *Server) latestReleaseWithPhase(_ context.Context, ctr mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	releasecontroller := ctr.Params.Arguments["releasecontroller"].(string)
+	stream := ctr.Params.Arguments["stream"].(string)
+	result, err := s.releaseController.LatestReleaseWithPhase(releasecontroller, stream)
 	return NewTextResult(result, err), nil
 }
 

@@ -1,8 +1,10 @@
 package releasecontroller
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
 	"strings"
 
 	utils "github.com/Prashanth684/releasecontroller-mcp-server/pkg/utils"
@@ -69,6 +71,21 @@ func (r *releaseControllerCli) ListReleaseStreams(releasecontroller string) (str
 	return strings.Join(topKeys, ", "), nil
 }
 
+func (r *releaseControllerCli) LatestReleaseWithPhase(releasecontroller, stream string) (string, error) {
+	data, err := utils.FetchJSONBytes(fmt.Sprintf("https://%s/api/v1/releasestream/%s/tags", releasecontroller, stream))
+	if err != nil {
+		return "", fmt.Errorf("error fetching release tags: %w", err)
+	}
+	release, err := utils.ParseRelease(data)
+	if err != nil {
+		return "", fmt.Errorf("error parsing release data: %w", err)
+	}
+	latestRelease := release.Tags[0]
+	// combine the output of latestRelease with the stream
+	full := fmt.Sprintf("%s, %s", latestRelease.Name, latestRelease.Phase)
+	return full, nil
+}
+
 // LatestAcceptedRelease gets the latest accepted release for a given stream
 func (r *releaseControllerCli) LatestAcceptedRelease(releasecontroller, stream string) (string, error) {
 	data, err := utils.FetchJSONBytes(fmt.Sprintf("https://%s/api/v1/releasestream/%s/tags", releasecontroller, stream))
@@ -80,6 +97,14 @@ func (r *releaseControllerCli) LatestAcceptedRelease(releasecontroller, stream s
 		return "", fmt.Errorf("error parsing release data: %w", err)
 	}
 	acceptedTags := utils.FilterAcceptedTags(release)
+	acceptedTagsJSON, err := json.MarshalIndent(acceptedTags, "", "  ")
+	if err != nil {
+		return "", fmt.Errorf("error marshaling accepted tags data: %w", err)
+	}
+	err = os.WriteFile("latest_accepted_tags.json", acceptedTagsJSON, 0644)
+	if err != nil {
+		return "", fmt.Errorf("error writing accepted tags data to file: %w", err)
+	}
 	if len(acceptedTags) == 0 {
 		return "", errors.New("no accepted tags found")
 	}

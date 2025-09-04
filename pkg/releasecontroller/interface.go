@@ -18,6 +18,8 @@ type ReleaseController interface {
 	GetS390XReleaseController() string
 	// ListReleaseStreams lists all the release streams in the release controller
 	ListReleaseStreams(releasecontroller string) (string, error)
+	// LatestRelease gets the latest release for a given stream
+	LatestReleaseWithPhase(releasecontroller, stream string) (string, error)
 	// LatestAcceptedRelease gets the latest accepted release for a given stream
 	LatestAcceptedRelease(releasecontroller, stream string) (string, error)
 	// LatestRejectedRelease gets the latest rejected release for a given stream
